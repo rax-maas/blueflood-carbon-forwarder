@@ -6,7 +6,6 @@ from twisted.internet.error import ConnectionDone
 from twisted.protocols.basic import LineOnlyReceiver, Int32StringReceiver
 
 import util
-import collect
 
 
 class MetricReceiver:
@@ -20,11 +19,7 @@ class MetricReceiver:
         if int(datapoint[0]) == -1:
             datapoint = (time.time(), datapoint[1])
 
-        self.processMetric(metric, datapoint)
-
-    def processMetric(self, metric, datapoint):
-      collect.collect(metric, datapoint)
-
+        self.factory.processMetric(metric, datapoint)
 
 class MetricLineReceiver(MetricReceiver, LineOnlyReceiver):
     delimiter = '\n'

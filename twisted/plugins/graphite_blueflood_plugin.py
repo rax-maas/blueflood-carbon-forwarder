@@ -44,7 +44,7 @@ class GraphiteMetricFactory(Factory):
 class MetricService(Service):
 
     def __init__(self, endpoint, interval, blueflood_url, tenant, ttl):
-        self._endpoint = endpoint
+        self.endpoint = endpoint
         self.flush_interval = interval
         self.blueflood_url = blueflood_url
         self.tenant = tenant
@@ -53,7 +53,7 @@ class MetricService(Service):
     def startService(self):
         from twisted.internet import reactor
 
-        server = serverFromString(reactor, self._endpoint)
+        server = serverFromString(reactor, self.endpoint)
         factory = GraphiteMetricFactory.forProtocol(MetricLineReceiver)
         self._setup_blueflood(factory)
         self.timer = LoopingCall(factory.flushMetric)

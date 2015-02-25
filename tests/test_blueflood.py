@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 import urllib2
+import time
 
 from bluefloodserver.blueflood import BluefloodEndpoint
 import pytest
 
 
 try:
-    BluefloodEndpoint().retrieve('', 0, 0, 0)
-except urllib2.URLError:
+    b = BluefloodEndpoint()
+    b.ingest('f.b.z', 1, 1, 1)
+    b.commit()
+except urllib2.URLError, e:
     skip = True
 else:
     skip = False
@@ -50,7 +53,6 @@ def testMultipleIngest(setup):
          endpoint.ingest(name, t, v, ttl)
     assert endpoint.commit() == ''
     data = endpoint.retrieve(name, 0, 10, 200)
-    print (data)
     assert len(data['values']) == 5
 
 @pytest.mark.skipif(skip, reason="Blueflood isn't running")
@@ -58,13 +60,13 @@ def testRetrieve(setup):
     endpoint = setup
     name = 'example.metric.retrieve'
     ttl = 10
-    time = 1376509892612
+    timestamp = int(time.time())
     value = 50
     # insert first
-    endpoint.ingest(name, time, value, ttl)
+    endpoint.ingest(name, timestamp, value, ttl)
     assert endpoint.commit() == ''
-    # range is 0-time, 200 points
-    data = endpoint.retrieve(name, 0, time + 10, 200)
+    # range is 0-time
+    data = endpoint.retrieve_resolution(name, 0, timestamp + 10)
     assert len(data) != 0
     assert len(data['values']) != 0
     assert data['values'][0]['numPoints'] == 1

@@ -22,7 +22,6 @@ def _get_metrics_query_url_resolution(url, tenantId,
         + '?from=' + str(start) + '&to=' + str(end) + '&resolution=' + resolution
 
 
-# TODO switch resolution/points on retrieve
 class BluefloodEndpoint():
 
     def __init__(self, ingest_url='http://localhost:19000', retrieve_url='http://localhost:20000', tenant='tenant-id'):

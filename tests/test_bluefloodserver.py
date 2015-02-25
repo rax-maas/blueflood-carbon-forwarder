@@ -1,3 +1,5 @@
+import StringIO
+import json
 import mock
 import twisted.plugins.graphite_blueflood_plugin as plugin
 from twisted.test import proto_helpers
@@ -17,4 +19,29 @@ def test_factory():
 
     proto.dataReceived('foo.bar.baz 123 123456789.0\n')
     assert factory._metric_collection.collect.called_once_with('foo.bar.baz', 123456789.0, 123.0)
-    
+
+@mock.patch('bluefloodserver.blueflood.urllib2.urlopen')    
+def test_send_blueflood(urlopen):
+    factory = plugin.GraphiteMetricFactory()
+    factory.protocol = plugin.MetricLineReceiver
+    plugin.MetricService(
+        endpoint='',
+        interval=5,
+        blueflood_url='http://bluefloodurl:190',
+        tenant='tenant',
+        ttl=30)._setup_blueflood(factory)
+
+    proto = factory.buildProtocol(('127.0.0.1', 0))
+    tr = proto_helpers.StringTransport()
+    proto.makeConnection(tr)
+
+    proto.dataReceived('foo.bar.baz 123 123456789.0\n')
+    factory.flushMetric()
+    assert urlopen.called 
+    assert len(urlopen.call_args_list) == 1
+    rq = urlopen.call_args_list[0][0][0]
+    assert rq.get_full_url() == 'http://bluefloodurl:190/v2.0/tenant/ingest'
+    metrics = json.loads(rq.get_data())
+    assert len(metrics) == 1
+    assert metrics[0]['metricName'] == 'foo.bar.baz'
+    assert metrics[0]['metricValue'] == 123.0

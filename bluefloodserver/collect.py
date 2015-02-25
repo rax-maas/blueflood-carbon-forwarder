@@ -5,7 +5,7 @@ class IFlush:
 
 class ConsumeFlush(IFlush):
 
-    def flush(self):
+    def flush(self, metrics):
         pass
 
 class FileFlush(IFlush):
@@ -21,9 +21,9 @@ class FileFlush(IFlush):
 
 class BluefloodFlush(IFlush):
 
-    def __init__(self, client):
+    def __init__(self, client, ttl=60*60*24):
         self.client = client
-        self.ttl = 60 * 60 * 24
+        self.ttl = ttl
 
     def flush(self, metrics):
         for name, time, value in metrics:
@@ -41,5 +41,6 @@ class MetricCollection:
         self._metrics.append((metric, datapoint[0], datapoint[1]))
 
     def flush(self):
-        self.flusher.flush(self._metrics)
-        self._metrics = []
+        if self._metrics:
+            self.flusher.flush(self._metrics)
+            self._metrics = []

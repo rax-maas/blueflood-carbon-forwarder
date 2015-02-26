@@ -1,3 +1,5 @@
+import logging
+
 from twisted.application.service import IServiceMaker, Service
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.protocol import Factory
@@ -32,10 +34,12 @@ class GraphiteMetricFactory(Factory):
         self._metric_collection = MetricCollection(flusher)
 
     def processMetric(self, metric, datapoint):
+        log.msg('Receive metric {} {}:{}'.format(metric, datapoint[0], datapoint[1]), level=logging.DEBUG)
         self._metric_collection.collect(metric, datapoint)
 
     def flushMetric(self):
         try:
+            log.msg('Sending {} metrics'.format(self._metric_collection.count()), level=logging.DEBUG)
             self._metric_collection.flush()
         except Exception, e:
             log.err(e)
@@ -54,6 +58,7 @@ class MetricService(Service):
         from twisted.internet import reactor
 
         server = serverFromString(reactor, self.endpoint)
+        log.msg('Start listening at {}'.format(self.endpoint))
         factory = GraphiteMetricFactory.forProtocol(MetricLineReceiver)
         self._setup_blueflood(factory)
         self.timer = LoopingCall(factory.flushMetric)
@@ -65,6 +70,8 @@ class MetricService(Service):
         self.timer.stop()
 
     def _setup_blueflood(self, factory):
+        log.msg('Send metrics to {} as {} with {} sec interval'
+            .format(self.blueflood_url, self.tenant, self.flush_interval))
         client = BluefloodEndpoint(
             ingest_url=self.blueflood_url,
             tenant=self.tenant)

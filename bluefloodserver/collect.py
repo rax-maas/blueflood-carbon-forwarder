@@ -44,3 +44,6 @@ class MetricCollection:
         if self._metrics:
             self.flusher.flush(self._metrics)
             self._metrics = []
+
+    def count(self):
+        return len(self._metrics)

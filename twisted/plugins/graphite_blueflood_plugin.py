@@ -1,6 +1,6 @@
 import logging
 
-from twisted.application.service import IServiceMaker, Service
+from twisted.application.service import IServiceMaker, Service, MultiService
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.protocol import Factory
 from twisted.internet.task import LoopingCall
@@ -9,7 +9,7 @@ from twisted.plugin import IPlugin
 from twisted.python import usage, log
 from zope.interface import implementer
 
-from bluefloodserver.protocols import MetricLineReceiver
+from bluefloodserver.protocols import MetricLineReceiver, MetricPickleReceiver
 from bluefloodserver.collect import MetricCollection, ConsumeFlush, BluefloodFlush
 from bluefloodserver.blueflood import BluefloodEndpoint
 
@@ -17,7 +17,8 @@ from bluefloodserver.blueflood import BluefloodEndpoint
 class Options(usage.Options):
     DEFAULT_TTL = 60 * 60 * 24
     optParameters = [
-        ['endpoint', 'e', 'tcp:2003', 'Twisted formatted endpoint to listen to plain text protocol metrics'],
+        ['endpoint', 'e', 'tcp:2004', 'Twisted formatted endpoint to listen to pickle protocol metrics'],
+        ['endpoint-plain', '', 'tcp:2003', 'Twisted formatted endpoint to listen to plain text protocol metrics'],
         ['interval', 'i', 30, 'Metric send interval, sec'],
         ['blueflood', 'b', 'http://localhost:19000', 'Blueflood server ingest URL (schema, host, port)'],
         ['tenant', 't', '', 'Blueflood tenant ID'],
@@ -47,7 +48,8 @@ class GraphiteMetricFactory(Factory):
 
 class MetricService(Service):
 
-    def __init__(self, endpoint, interval, blueflood_url, tenant, ttl):
+    def __init__(self, protocol_cls, endpoint, interval, blueflood_url, tenant, ttl):
+        self.protocol_cls = protocol_cls
         self.endpoint = endpoint
         self.flush_interval = interval
         self.blueflood_url = blueflood_url
@@ -59,7 +61,7 @@ class MetricService(Service):
 
         server = serverFromString(reactor, self.endpoint)
         log.msg('Start listening at {}'.format(self.endpoint))
-        factory = GraphiteMetricFactory.forProtocol(MetricLineReceiver)
+        factory = GraphiteMetricFactory.forProtocol(self.protocol_cls)
         self._setup_blueflood(factory)
         self.timer = LoopingCall(factory.flushMetric)
         self.timer.start(self.flush_interval)
@@ -85,13 +87,27 @@ class MetricServiceMaker(object):
     options = Options
 
     def makeService(self, options):
-        return MetricService(
+        service = MultiService()
+
+        MetricService(
+            protocol_cls=MetricPickleReceiver,
             endpoint=options['endpoint'],
             interval=float(options['interval']),
             blueflood_url=options['blueflood'],
             tenant=options['tenant'],
             ttl=int(options['ttl'])
-        )
+        ).setServiceParent(service)
+
+        MetricService(
+            protocol_cls=MetricLineReceiver,
+            endpoint=options['endpoint-plain'],
+            interval=float(options['interval']),
+            blueflood_url=options['blueflood'],
+            tenant=options['tenant'],
+            ttl=int(options['ttl'])
+        ).setServiceParent(service)
+
+        return service
 
 
 serviceMaker = MetricServiceMaker()

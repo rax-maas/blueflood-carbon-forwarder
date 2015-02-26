@@ -7,7 +7,7 @@ from twisted.test import proto_helpers
 
 def test_service():
     service = plugin.serviceMaker.makeService(plugin.Options())
-    assert isinstance(service, plugin.MetricService)
+    assert isinstance(service, plugin.MultiService)
 
 def test_factory():
     factory = plugin.GraphiteMetricFactory()
@@ -25,6 +25,7 @@ def test_send_blueflood(urlopen):
     factory = plugin.GraphiteMetricFactory()
     factory.protocol = plugin.MetricLineReceiver
     plugin.MetricService(
+        protocol_cls=factory.protocol,
         endpoint='',
         interval=5,
         blueflood_url='http://bluefloodurl:190',

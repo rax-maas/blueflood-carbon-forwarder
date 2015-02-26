@@ -29,10 +29,12 @@ Configuration is done with command line arguments passed to twistd daemon when r
     twistd -n -l - blueflood-forward --help
 
 | Switch | Description | default |
-| - | - | - |
-| -e | Endpoint to listen on for pickle protocol metrics | tcp:2004|
+| ----- | ------- | --------- |
+| -e | Endpoint to listen on for pickle protocol metrics | tcp:2004 |
 | --endpoint-plain | Endpoint to listen on for plain text protocol metrics | tcp:2003 |
 | -i | Metrics send interval, sec | 30.0 |
 | -b | Blueflood address | http://localhost:19000 |
 | -t | Tenand ID | tenant |
 | --ttl | TimeToLive value for metrics, sec | 86400 |
+
+[blueflood-git]: https://github.com/rackerlabs/blueflood "blueflood"

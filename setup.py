@@ -24,7 +24,7 @@ long_description = read('README.md')
 class PyTest(TestCommand):
     def finalize_options(self):
         TestCommand.finalize_options(self)
-        self.test_args = []
+        self.test_args = ['--twisted']
         self.test_suite = True
 
     def run_tests(self):
@@ -38,7 +38,7 @@ setup(
     url='https://github.com/rampage644/graphite-http-wrapper',
     license='Apache Software License',
     author='Sergei Turukin',
-    tests_require=['pytest', 'mock', 'twisted'],
+    tests_require=['pytest', 'mock', 'twisted', 'pytest-twisted'],
     install_requires=['twisted'],
     cmdclass={'test': PyTest},
     author_email='sergei.turukin@rackspace.com',

@@ -4,6 +4,14 @@ import urllib2
 import urlparse
 import json
 
+from StringIO import StringIO
+
+from twisted.internet import reactor
+from twisted.internet.defer import Deferred
+from twisted.internet.protocol import Protocol
+from twisted.web.client import Agent, FileBodyProducer, readBody
+from twisted.web.http_headers import Headers
+
 
 def _get_metrics_url(url, tenantId):
     return url + '/v2.0/'\
@@ -49,25 +57,37 @@ class BluefloodEndpoint():
         self._json_buffer.extend(data)
 
     def commit(self):
-        req = urllib2.Request(_get_metrics_url(self.ingest_url, self.tenant),
-            json.dumps(self._json_buffer), self.headers)
-        r = urllib2.urlopen(req)
+        agent = Agent(reactor)
+        body = FileBodyProducer(StringIO(json.dumps(self._json_buffer)))
+        d = agent.request(
+            'POST',
+            _get_metrics_url(self.ingest_url, self.tenant),
+            Headers(self.headers),
+            body)
+
         self._json_buffer = []
-        return r.read()
+        return d
 
 
     def retrieve_points(self, metric_name, start, to, points):
-        req = urllib2.Request(_get_metrics_query_url(self.retrieve_url, self.tenant,
-            metric_name, start, to, points), None, self.headers)
-        r = urllib2.urlopen(req)
-        response = r.read()
-        return json.loads(response)
+        agent = Agent(reactor)
+        d = agent.request(
+            'GET',
+            _get_metrics_query_url(self.retrieve_url,
+                self.tenant, metric_name, start, to, points),
+            Headers(self.headers),
+            None)
+        return d
 
     retrieve = retrieve_points
 
     def retrieve_resolution(self, metric_name, start, to, resolution='FULL'):
-        req = urllib2.Request(_get_metrics_query_url_resolution(self.retrieve_url, self.tenant,
-            metric_name, start, to, resolution), None, self.headers)
-        r = urllib2.urlopen(req)
-        response = r.read()
-        return json.loads(response)
+        agent = Agent(reactor)
+        d = agent.request(
+            'GET',
+            _get_metrics_query_url_resolution(self.retrieve_url,
+                self.tenant, metric_name, start, to, resolution),
+            Headers(self.headers),
+            None)
+
+        return d

@@ -7,7 +7,7 @@ import json
 from StringIO import StringIO
 
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred
+from twisted.internet.defer import Deferred, inlineCallbacks, returnValue
 from twisted.internet.protocol import Protocol
 from twisted.web.client import Agent, FileBodyProducer, readBody
 from twisted.web.http_headers import Headers
@@ -56,6 +56,7 @@ class BluefloodEndpoint():
         } for t,v in zip(time, value)]
         self._json_buffer.extend(data)
 
+    @inlineCallbacks
     def commit(self):
         agent = Agent(reactor)
         body = FileBodyProducer(StringIO(json.dumps(self._json_buffer)))
@@ -65,10 +66,13 @@ class BluefloodEndpoint():
             Headers(self.headers),
             body)
 
-        self._json_buffer = []
-        return d
+        resp = yield d
+        if resp.code == 200:
+            self._json_buffer = []
+        returnValue(None)
 
 
+    @inlineCallbacks
     def retrieve_points(self, metric_name, start, to, points):
         agent = Agent(reactor)
         d = agent.request(
@@ -77,10 +81,14 @@ class BluefloodEndpoint():
                 self.tenant, metric_name, start, to, points),
             Headers(self.headers),
             None)
-        return d
+        resp = yield d
+        body = yield readBody(resp)
+
+        returnValue(json.loads(body))
 
     retrieve = retrieve_points
 
+    @inlineCallbacks
     def retrieve_resolution(self, metric_name, start, to, resolution='FULL'):
         agent = Agent(reactor)
         d = agent.request(
@@ -90,4 +98,7 @@ class BluefloodEndpoint():
             Headers(self.headers),
             None)
 
-        return d
+        resp = yield d
+        body = yield readBody(resp)
+
+        returnValue(json.loads(body))

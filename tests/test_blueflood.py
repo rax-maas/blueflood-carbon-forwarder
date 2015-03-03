@@ -10,9 +10,8 @@ from bluefloodserver.blueflood import BluefloodEndpoint
 
 try:
     b = BluefloodEndpoint()
-    b.ingest('f.b.z', 1, 1, 1)
-    b.commit()
-except urllib2.URLError, e:
+    data = urllib2.urlopen(b.ingest_url).read()
+except Exception, e:
     skip = True
 else:
     skip = False
@@ -28,8 +27,7 @@ def testSingleIngest(setup):
     name = 'example.metric.single.ingest'
     ttl = 10
     endpoint.ingest(name, 1376509892612, 50, ttl) 
-    d = yield endpoint.commit()
-    assert d.code == 200
+    yield endpoint.commit()
 
 @pytest.inlineCallbacks
 @pytest.mark.skipif(skip, reason="Blueflood isn't running")
@@ -41,8 +39,7 @@ def testListIngest(setup):
                     [1376509892612, 1376509892613, 1376509892614], 
                     [50, 51, 52], 
                     ttl)
-    d = yield endpoint.commit()
-    assert d.code == 200
+    yield endpoint.commit()
     with pytest.raises(Exception):
         endpoint.ingest(name, 
                         [1376509892612, 1376509892613, 1376509892614], 
@@ -58,11 +55,9 @@ def testMultipleIngest(setup):
     times, values = list(range(5)), [50.0] * 5
     for t, v in zip(times, values):
          endpoint.ingest(name, t, v, ttl)
-    d = yield endpoint.commit()
-    assert d.code == 200
-    resp = yield endpoint.retrieve_resolution(name, 0, 10)
-    data = yield readBody(resp)
-    assert len(json.loads(data)['values']) == 5
+    yield endpoint.commit()
+    data = yield endpoint.retrieve_resolution(name, 0, 10)
+    assert len(data['values']) == 5
 
 @pytest.inlineCallbacks
 @pytest.mark.skipif(skip, reason="Blueflood isn't running")
@@ -74,12 +69,9 @@ def testRetrieveByResolution(setup):
     value = 50
     # insert first
     endpoint.ingest(name, timestamp, value, ttl)
-    d = yield endpoint.commit()
-    assert d.code == 200
+    yield endpoint.commit()
     # range is 0-time
-    resp = yield endpoint.retrieve_resolution(name, 0, timestamp + 10)
-    rdata = yield readBody(resp)
-    data = json.loads(rdata)
+    data = yield endpoint.retrieve_resolution(name, 0, timestamp + 10)
     assert len(data) != 0
     assert len(data['values']) != 0
     assert data['values'][0]['numPoints'] == 1
@@ -91,20 +83,28 @@ def testRetrieveByPoints(setup):
     endpoint = setup
     name = 'example.metric.retrieve'
     ttl = 10
-    timestamp = int(time.time())
+    timestamp = 1234567
     value = 50
     # insert first
     endpoint.ingest(name, timestamp, value, ttl)
-    d = yield endpoint.commit()
-    assert d.code == 200
+    yield endpoint.commit()
     # range is 0-time
-    resp = yield endpoint.retrieve_points(name, 0, timestamp + 10, 200)
-    rdata = yield readBody(resp)
-    data = json.loads(rdata)
+    data = yield endpoint.retrieve_points(name, 0, timestamp, 200)
     assert len(data) != 0
     assert len(data['values']) != 0
     assert data['values'][0]['numPoints'] == 1
     assert data['values'][0]['average'] == value
+
+@pytest.inlineCallbacks
+def testNoConnection():
+    endpoint = BluefloodEndpoint(ingest_url='http://localhost:9623',
+        retrieve_url='http://localhost:8231')
+    with pytest.raises(Exception):
+        d = yield endpoint.commit()
+    with pytest.raises(Exception):
+        yield endpoint.retrieve_points('', 0, 0, 0)
+    with pytest.raises(Exception):
+        yield endpoint.retrieve_resolution('', 0, 0)
 
 
 if __name__ == '__main__':

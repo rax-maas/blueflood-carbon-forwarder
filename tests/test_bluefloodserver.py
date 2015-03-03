@@ -20,8 +20,8 @@ def test_factory():
     proto.dataReceived('foo.bar.baz 123 123456789.0\n')
     assert factory._metric_collection.collect.called_once_with('foo.bar.baz', 123456789.0, 123.0)
 
-@mock.patch('bluefloodserver.blueflood.urllib2.urlopen')    
-def test_send_blueflood(urlopen):
+@mock.patch('bluefloodserver.blueflood.Agent.request')    
+def test_send_blueflood(request):
     factory = plugin.GraphiteMetricFactory()
     factory.protocol = plugin.MetricLineReceiver
     plugin.MetricService(
@@ -38,11 +38,12 @@ def test_send_blueflood(urlopen):
 
     proto.dataReceived('foo.bar.baz 123 123456789.0\n')
     factory.flushMetric()
-    assert urlopen.called 
-    assert len(urlopen.call_args_list) == 1
-    rq = urlopen.call_args_list[0][0][0]
-    assert rq.get_full_url() == 'http://bluefloodurl:190/v2.0/tenant/ingest'
-    metrics = json.loads(rq.get_data())
+    assert request.called 
+    assert len(request.call_args_list) == 1
+    rq = request.call_args_list[0][0]
+    assert rq[0] == 'POST'
+    assert rq[1] == 'http://bluefloodurl:190/v2.0/tenant/ingest'
+    metrics = json.loads(rq[3]._inputFile.read())
     assert len(metrics) == 1
     assert metrics[0]['metricName'] == 'foo.bar.baz'
     assert metrics[0]['metricValue'] == 123.0

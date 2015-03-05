@@ -4,3 +4,5 @@ py==1.4.26
 pytest==2.6.4
 Twisted==15.0.0
 zope.interface==4.1.2
+txKeystone==0.1.3
+

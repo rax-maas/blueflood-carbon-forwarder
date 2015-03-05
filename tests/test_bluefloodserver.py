@@ -1,7 +1,9 @@
 import StringIO
 import json
 import mock
+import pytest
 import twisted.plugins.graphite_blueflood_plugin as plugin
+from twisted.web.client import Agent
 from twisted.test import proto_helpers
 
 
@@ -20,9 +22,9 @@ def test_factory():
     proto.dataReceived('foo.bar.baz 123 123456789.0\n')
     assert factory._metric_collection.collect.called_once_with('foo.bar.baz', 123456789.0, 123.0)
 
-@mock.patch('bluefloodserver.blueflood.Agent.request')    
 def test_send_blueflood(request):
     factory = plugin.GraphiteMetricFactory()
+    agent = mock.MagicMock()
     factory.protocol = plugin.MetricLineReceiver
     plugin.MetricService(
         protocol_cls=factory.protocol,
@@ -30,7 +32,7 @@ def test_send_blueflood(request):
         interval=5,
         blueflood_url='http://bluefloodurl:190',
         tenant='tenant',
-        ttl=30)._setup_blueflood(factory)
+        ttl=30)._setup_blueflood(factory, agent)
 
     proto = factory.buildProtocol(('127.0.0.1', 0))
     tr = proto_helpers.StringTransport()
@@ -38,9 +40,9 @@ def test_send_blueflood(request):
 
     proto.dataReceived('foo.bar.baz 123 123456789.0\n')
     factory.flushMetric()
-    assert request.called 
-    assert len(request.call_args_list) == 1
-    rq = request.call_args_list[0][0]
+    assert agent.request.called 
+    assert len(agent.request.call_args_list) == 1
+    rq = agent.request.call_args_list[0][0]
     assert rq[0] == 'POST'
     assert rq[1] == 'http://bluefloodurl:190/v2.0/tenant/ingest'
     metrics = json.loads(rq[3]._inputFile.read())

@@ -5,20 +5,23 @@ import json
 import pytest
 
 from twisted.web.client import Agent, FileBodyProducer, readBody
+from twisted.internet import reactor
 from bluefloodserver.blueflood import BluefloodEndpoint
 
 
 try:
     b = BluefloodEndpoint()
     data = urllib2.urlopen(b.ingest_url).read()
-except Exception, e:
+except urllib2.HTTPError, e:
+    skip = False
+except urllib2.URLError, e:
     skip = True
 else:
     skip = False
 
 @pytest.fixture
 def setup():
-    return BluefloodEndpoint()
+    return BluefloodEndpoint(agent=Agent(reactor))
 
 @pytest.inlineCallbacks
 @pytest.mark.skipif(skip, reason="Blueflood isn't running")

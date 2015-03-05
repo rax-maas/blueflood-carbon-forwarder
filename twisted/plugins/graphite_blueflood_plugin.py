@@ -7,6 +7,7 @@ from twisted.internet.task import LoopingCall
 from twisted.application.internet import TCPServer
 from twisted.plugin import IPlugin
 from twisted.python import usage, log
+from twisted.web.client import Agent
 from zope.interface import implementer
 
 from bluefloodserver.protocols import MetricLineReceiver, MetricPickleReceiver
@@ -62,7 +63,7 @@ class MetricService(Service):
         server = serverFromString(reactor, self.endpoint)
         log.msg('Start listening at {}'.format(self.endpoint))
         factory = GraphiteMetricFactory.forProtocol(self.protocol_cls)
-        self._setup_blueflood(factory)
+        self._setup_blueflood(factory, Agent(reactor))
         self.timer = LoopingCall(factory.flushMetric)
         self.timer.start(self.flush_interval)
 
@@ -71,12 +72,13 @@ class MetricService(Service):
     def stopService(self):
         self.timer.stop()
 
-    def _setup_blueflood(self, factory):
+    def _setup_blueflood(self, factory, agent):
         log.msg('Send metrics to {} as {} with {} sec interval'
             .format(self.blueflood_url, self.tenant, self.flush_interval))
         client = BluefloodEndpoint(
             ingest_url=self.blueflood_url,
-            tenant=self.tenant)
+            tenant=self.tenant,
+            agent=agent)
         flusher = BluefloodFlush(client=client, ttl=self.ttl)
         factory._metric_collection.flusher = flusher
 

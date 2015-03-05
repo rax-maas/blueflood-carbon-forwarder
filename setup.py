@@ -39,7 +39,7 @@ setup(
     license='Apache Software License',
     author='Sergei Turukin',
     tests_require=['pytest', 'mock', 'twisted', 'pytest-twisted'],
-    install_requires=['twisted'],
+    install_requires=['twisted', 'txKeystone'],
     cmdclass={'test': PyTest},
     author_email='sergei.turukin@rackspace.com',
     description='Sending graphite metrics to blueflood',

@@ -4,12 +4,33 @@ import mock
 import pytest
 import twisted.plugins.graphite_blueflood_plugin as plugin
 from twisted.web.client import Agent
+from txKeystone import KeystoneAgent
 from twisted.test import proto_helpers
 
 
 def test_service():
     service = plugin.serviceMaker.makeService(plugin.Options())
-    assert isinstance(service, plugin.MultiService)
+    assert isinstance(service, plugin.MetricService)
+
+def test_service_simple_agent():
+    options = plugin.Options()
+    service = plugin.serviceMaker.makeService(options)
+    service._setup_blueflood = mock.MagicMock()
+    service.startService()
+    assert service._setup_blueflood.called
+    assert isinstance(service._setup_blueflood.call_args_list[0][0][1], Agent)
+    service.stopService()
+
+def test_service_auth_agent():
+    options = plugin.Options()
+    options.parseOptions(['--user', 'user', '--key', 'key'])
+    service = plugin.serviceMaker.makeService(options)
+    service._setup_blueflood = mock.MagicMock()
+    service.startService()
+    assert service._setup_blueflood.called
+    assert isinstance(service._setup_blueflood.call_args_list[0][0][1], KeystoneAgent)
+    service.stopService()
+
 
 def test_factory():
     factory = plugin.GraphiteMetricFactory()
@@ -22,7 +43,7 @@ def test_factory():
     proto.dataReceived('foo.bar.baz 123 123456789.0\n')
     assert factory._metric_collection.collect.called_once_with('foo.bar.baz', 123456789.0, 123.0)
 
-def test_send_blueflood(request):
+def test_send_blueflood():
     factory = plugin.GraphiteMetricFactory()
     agent = mock.MagicMock()
     factory.protocol = plugin.MetricLineReceiver

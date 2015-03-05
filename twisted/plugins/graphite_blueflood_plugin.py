@@ -14,18 +14,21 @@ from bluefloodserver.protocols import MetricLineReceiver, MetricPickleReceiver
 from bluefloodserver.collect import MetricCollection, ConsumeFlush, BluefloodFlush
 from bluefloodserver.blueflood import BluefloodEndpoint
 
+from txKeystone import KeystoneAgent
+
 
 class Options(usage.Options):
+    AUTH_URL = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
     DEFAULT_TTL = 60 * 60 * 24
     optParameters = [
         ['endpoint', 'e', 'tcp:2004', 'Twisted formatted endpoint to listen to pickle protocol metrics'],
-        ['endpoint-plain', '', 'tcp:2003', 'Twisted formatted endpoint to listen to plain text protocol metrics'],
         ['interval', 'i', 30, 'Metric send interval, sec'],
         ['blueflood', 'b', 'http://localhost:19000', 'Blueflood server ingest URL (schema, host, port)'],
         ['tenant', 't', '', 'Blueflood tenant ID'],
         ['ttl', '', DEFAULT_TTL, 'TTL value for metrics, sec'],
         ['user', 'u', '', 'Rackspace authentication username. Leave empty if no auth is required'],
-        ['pass', 'p', '', 'Rackspace authentication password']
+        ['key', 'k', '', 'Rackspace authentication password'],
+        ['auth_url', '', AUTH_URL, 'Auth URL']
     ]
 
 
@@ -49,13 +52,16 @@ class GraphiteMetricFactory(Factory):
 
 class MetricService(Service):
 
-    def __init__(self, protocol_cls, endpoint, interval, blueflood_url, tenant, ttl):
-        self.protocol_cls = protocol_cls
-        self.endpoint = endpoint
-        self.flush_interval = interval
-        self.blueflood_url = blueflood_url
-        self.tenant = tenant
-        self.ttl = ttl
+    def __init__(self, **kwargs):
+        self.protocol_cls = kwargs.get('protocol_cls')
+        self.endpoint = kwargs.get('endpoint')
+        self.flush_interval = kwargs.get('interval')
+        self.blueflood_url = kwargs.get('blueflood_url')
+        self.tenant = kwargs.get('tenant')
+        self.ttl = kwargs.get('ttl')
+        self.user = kwargs.get('user')
+        self.key = kwargs.get('key')
+        self.auth_url = kwargs.get('auth_url')
 
     def startService(self):
         from twisted.internet import reactor
@@ -63,7 +69,10 @@ class MetricService(Service):
         server = serverFromString(reactor, self.endpoint)
         log.msg('Start listening at {}'.format(self.endpoint))
         factory = GraphiteMetricFactory.forProtocol(self.protocol_cls)
-        self._setup_blueflood(factory, Agent(reactor))
+        agent = Agent(reactor)
+        if self.user:
+            agent = KeystoneAgent(agent, self.auth_url, (self.user, self.key))
+        self._setup_blueflood(factory, agent)
         self.timer = LoopingCall(factory.flushMetric)
         self.timer.start(self.flush_interval)
 
@@ -89,27 +98,17 @@ class MetricServiceMaker(object):
     options = Options
 
     def makeService(self, options):
-        service = MultiService()
-
-        MetricService(
+        return MetricService(
             protocol_cls=MetricPickleReceiver,
             endpoint=options['endpoint'],
             interval=float(options['interval']),
             blueflood_url=options['blueflood'],
             tenant=options['tenant'],
-            ttl=int(options['ttl'])
-        ).setServiceParent(service)
-
-        MetricService(
-            protocol_cls=MetricLineReceiver,
-            endpoint=options['endpoint-plain'],
-            interval=float(options['interval']),
-            blueflood_url=options['blueflood'],
-            tenant=options['tenant'],
-            ttl=int(options['ttl'])
-        ).setServiceParent(service)
-
-        return service
+            ttl=int(options['ttl']),
+            user=options['user'],
+            key=options['key'],
+            auth_url=options['auth_url']
+        )
 
 
 serviceMaker = MetricServiceMaker()

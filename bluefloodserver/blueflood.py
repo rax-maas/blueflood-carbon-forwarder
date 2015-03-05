@@ -32,7 +32,8 @@ def _get_metrics_query_url_resolution(url, tenantId,
 
 class BluefloodEndpoint():
 
-    def __init__(self, ingest_url='http://localhost:19000', retrieve_url='http://localhost:20000', tenant='tenant-id'):
+    def __init__(self, ingest_url='http://localhost:19000', retrieve_url='http://localhost:20000', tenant='tenant-id', agent=None):
+        self.agent = agent
         self.ingest_url = ingest_url
         self.retrieve_url = retrieve_url
         self.tenant = tenant
@@ -58,9 +59,8 @@ class BluefloodEndpoint():
 
     @inlineCallbacks
     def commit(self):
-        agent = Agent(reactor)
         body = FileBodyProducer(StringIO(json.dumps(self._json_buffer)))
-        d = agent.request(
+        d = self.agent.request(
             'POST',
             _get_metrics_url(self.ingest_url, self.tenant),
             Headers(self.headers),
@@ -74,8 +74,7 @@ class BluefloodEndpoint():
 
     @inlineCallbacks
     def retrieve_points(self, metric_name, start, to, points):
-        agent = Agent(reactor)
-        d = agent.request(
+        d = self.agent.request(
             'GET',
             _get_metrics_query_url(self.retrieve_url,
                 self.tenant, metric_name, start, to, points),
@@ -90,8 +89,7 @@ class BluefloodEndpoint():
 
     @inlineCallbacks
     def retrieve_resolution(self, metric_name, start, to, resolution='FULL'):
-        agent = Agent(reactor)
-        d = agent.request(
+        d = self.agent.request(
             'GET',
             _get_metrics_query_url_resolution(self.retrieve_url,
                 self.tenant, metric_name, start, to, resolution),

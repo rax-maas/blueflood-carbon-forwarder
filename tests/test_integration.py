@@ -17,8 +17,6 @@ import http_server_mock
 from twisted.internet import reactor, endpoints
 from twisted.web import server
 
-pytestmark = pytest.mark.integration
-
 
 b_handler = None
 a_handler = None
@@ -32,10 +30,11 @@ AUTH_KEY = 'key2'
 BLUEFLOOD_URL = 'http://localhost:8000'
 LISTEN_URL = ('localhost', 2004)
 INTERVAL = 5
+LIMIT = 1024 # 1 kilobyte
 
 def run_twisted(user=None, key=None):
     args = ['twistd', '-n', '-l', 'log.txt', 'blueflood-forward',
-     '-b', BLUEFLOOD_URL, '-i', str(INTERVAL), '-t', TENANT]
+     '-b', BLUEFLOOD_URL, '-i', str(INTERVAL), '-t', TENANT, '--limit', str(LIMIT)]
     if user:
         args.extend(['-u', user, '-k', key, '--auth_url', AUTH_URL])
     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -93,6 +92,7 @@ def fixture_run_twisted(request, user, key):
         watchdog_timer.start()
         p.wait()
         watchdog_timer.cancel()
+        print 'quit', p, time.time()
         assert p.returncode == 0
     request.addfinalizer(fin)
     return p
@@ -160,3 +160,29 @@ def test_auth(blueflood_handler, auth_handler, twistd_auth):
     headers = blueflood_handler.data[0][1]
     assert 'x-auth-token' in headers
     assert headers['x-auth-token'] == 'eb5e1d9287054898a55439137ea68675'
+
+def test_splitting_payload(blueflood_handler, twistd):
+    blueflood_handler.should_reply_forever(200, '', {})
+    cv = blueflood_handler.cv
+
+    time.sleep(1.5)
+    timestamp = int(time.time())
+    value = 10.0
+    name = 'foo.bar.baz'
+    metrics = {
+        'collectionTime': timestamp,
+        'metricName': name,
+        'metricValue': value,
+        'ttlInSeconds': 86400
+    }
+    metric_size = len(json.dumps(metrics))
+    count = LIMIT / metric_size + 1
+    send_to_socket([(name, (timestamp, value)) for i in range(count)])
+    with cv:
+        cv.wait(INTERVAL * 2)
+
+    assert len(blueflood_handler.data) > 1
+    _, _, _, data = blueflood_handler.data[0]
+    assert len(data) < LIMIT
+    _, _, _, data_rest = blueflood_handler.data[1]
+    assert len(data) != len(data_rest)

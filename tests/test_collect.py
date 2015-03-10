@@ -1,8 +1,8 @@
 import time
 import os
-
 import mock
 
+from bluefloodserver.blueflood import LimitExceededException
 import bluefloodserver.collect as cl
 
 
@@ -49,3 +49,16 @@ def test_blueflood_flush():
 
     assert client.ingest.call_count == 10
     assert client.commit.called_once()
+
+def test_blueflood_flush_with_limits():
+    client = mock.MagicMock()
+    client.ingest.side_effect = [LimitExceededException, None]
+    flusher = cl.BluefloodFlush(client)
+    collector = cl.MetricCollection(flusher)
+
+    timestamp = time.time()
+    collector.collect('foo.bar.baz', (0, timestamp))
+    collector.flush()
+
+    assert client.ingest.call_count == 2
+    assert client.commit.call_count == 2

@@ -4,10 +4,18 @@ import time
 import json 
 import pytest
 
-from twisted.web.client import Agent, FileBodyProducer, readBody
-from twisted.internet import reactor
-from bluefloodserver.blueflood import BluefloodEndpoint
+from decorator import decorator
 
+from twisted.web.client import Agent, FileBodyProducer, readBody
+from twisted.internet import reactor, defer
+from bluefloodserver.blueflood import BluefloodEndpoint, LimitExceededException
+
+# python-twisted source code
+# TODO: find better way to enable twisted plugin for this particular test module
+# tried pytest_plugins directly here with no luck
+@decorator
+def inlineCallbacks(fun, *args, **kw):
+    return defer.inlineCallbacks(fun)(*args, **kw)
 
 try:
     b = BluefloodEndpoint()
@@ -23,7 +31,7 @@ else:
 def setup():
     return BluefloodEndpoint(agent=Agent(reactor))
 
-@pytest.inlineCallbacks
+@inlineCallbacks
 @pytest.mark.skipif(skip, reason="Blueflood isn't running")
 def testSingleIngest(setup):
     endpoint = setup
@@ -32,7 +40,7 @@ def testSingleIngest(setup):
     endpoint.ingest(name, 1376509892612, 50, ttl) 
     yield endpoint.commit()
 
-@pytest.inlineCallbacks
+@inlineCallbacks
 @pytest.mark.skipif(skip, reason="Blueflood isn't running")
 def testListIngest(setup):
     endpoint = setup
@@ -49,7 +57,7 @@ def testListIngest(setup):
                         50, 
                         ttl)
 
-@pytest.inlineCallbacks
+@inlineCallbacks
 @pytest.mark.skipif(skip, reason="Blueflood isn't running")
 def testMultipleIngest(setup):
     endpoint = setup
@@ -62,7 +70,7 @@ def testMultipleIngest(setup):
     data = yield endpoint.retrieve_resolution(name, 0, 10)
     assert len(data['values']) == 5
 
-@pytest.inlineCallbacks
+@inlineCallbacks
 @pytest.mark.skipif(skip, reason="Blueflood isn't running")
 def testRetrieveByResolution(setup):
     endpoint = setup
@@ -80,7 +88,7 @@ def testRetrieveByResolution(setup):
     assert data['values'][0]['numPoints'] == 1
     assert data['values'][0]['average'] == value
 
-@pytest.inlineCallbacks
+@inlineCallbacks
 @pytest.mark.skipif(skip, reason="Blueflood isn't running")
 def testRetrieveByPoints(setup):
     endpoint = setup
@@ -98,7 +106,7 @@ def testRetrieveByPoints(setup):
     assert data['values'][0]['numPoints'] == 1
     assert data['values'][0]['average'] == value
 
-@pytest.inlineCallbacks
+@inlineCallbacks
 def testNoConnection():
     endpoint = BluefloodEndpoint(ingest_url='http://localhost:9623',
         retrieve_url='http://localhost:8231')
@@ -108,6 +116,25 @@ def testNoConnection():
         yield endpoint.retrieve_points('', 0, 0, 0)
     with pytest.raises(Exception):
         yield endpoint.retrieve_resolution('', 0, 0)
+
+def testLimitIngestion():
+    timestamp = int(time.time())
+    name = ''
+    value = 1.0
+    ttl = 0
+    metric = {
+        'collectionTime':timestamp,
+        'metricName': name,
+        'metricValue': value,
+        'ttlInSeconds': ttl
+    }
+    metric_size = len(json.dumps(metric))
+    count = 5
+    endpoint = BluefloodEndpoint(limit=metric_size*count)
+    for i in range(count-1):
+        endpoint.ingest(name, timestamp, value, ttl)
+    with pytest.raises(LimitExceededException):
+        endpoint.ingest(name, timestamp, value, ttl)
 
 
 if __name__ == '__main__':

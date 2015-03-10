@@ -24,7 +24,7 @@ long_description = read('README.md')
 class PyTest(TestCommand):
     def finalize_options(self):
         TestCommand.finalize_options(self)
-        self.test_args = ['--twisted']
+        self.test_args = []
         self.test_suite = True
 
     def run_tests(self):
@@ -47,7 +47,7 @@ setup(
     packages=['bluefloodserver'],
     include_package_data=True,
     platforms='any',
-    test_suite='tests.test_bluefloodserver.py',
+    test_suite='tests',
     classifiers = [
         'Programming Language :: Python',
         'Development Status :: 4 - Beta',

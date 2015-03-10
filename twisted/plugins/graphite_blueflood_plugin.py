@@ -72,6 +72,7 @@ class MetricService(Service):
         agent = Agent(reactor)
         if self.user:
             agent = KeystoneAgent(agent, self.auth_url, (self.user, self.key))
+            log.msg('Auth URL: {}, user: {}'.format(self.auth_url, self.user))
         self._setup_blueflood(factory, agent)
         self.timer = LoopingCall(factory.flushMetric)
         self.timer.start(self.flush_interval)

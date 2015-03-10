@@ -28,7 +28,8 @@ class Options(usage.Options):
         ['ttl', '', DEFAULT_TTL, 'TTL value for metrics, sec'],
         ['user', 'u', '', 'Rackspace authentication username. Leave empty if no auth is required'],
         ['key', 'k', '', 'Rackspace authentication password'],
-        ['auth_url', '', AUTH_URL, 'Auth URL']
+        ['auth_url', '', AUTH_URL, 'Auth URL'],
+        ['limit', '', 0, 'Blueflood json payload limit, bytes. 0 means no limit']
     ]
 
 
@@ -62,6 +63,8 @@ class MetricService(Service):
         self.user = kwargs.get('user')
         self.key = kwargs.get('key')
         self.auth_url = kwargs.get('auth_url')
+        self.limit = kwargs.get('limit', 0)
+        self.port = None
 
     def startService(self):
         from twisted.internet import reactor
@@ -77,18 +80,27 @@ class MetricService(Service):
         self.timer = LoopingCall(factory.flushMetric)
         self.timer.start(self.flush_interval)
 
-        return server.listen(factory) 
+        d = server.listen(factory)
+        d.addCallback(self._store_listening_port)
+        return d
+
+    def _store_listening_port(self, port):
+        self.port = port
 
     def stopService(self):
+        if self.port:
+            self.port.stopListening()
         self.timer.stop()
 
     def _setup_blueflood(self, factory, agent):
         log.msg('Send metrics to {} as {} with {} sec interval'
             .format(self.blueflood_url, self.tenant, self.flush_interval))
+        log.msg('Limit is {} bytes'.format(self.limit))
         client = BluefloodEndpoint(
             ingest_url=self.blueflood_url,
             tenant=self.tenant,
-            agent=agent)
+            agent=agent,
+            limit=int(self.limit))
         flusher = BluefloodFlush(client=client, ttl=self.ttl)
         factory._metric_collection.flusher = flusher
 
@@ -108,7 +120,8 @@ class MetricServiceMaker(object):
             ttl=int(options['ttl']),
             user=options['user'],
             key=options['key'],
-            auth_url=options['auth_url']
+            auth_url=options['auth_url'],
+            limit=options['limit']
         )
 
 

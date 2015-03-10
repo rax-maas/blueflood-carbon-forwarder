@@ -30,15 +30,21 @@ def _get_metrics_query_url_resolution(url, tenantId,
         + '?from=' + str(start) + '&to=' + str(end) + '&resolution=' + resolution
 
 
+class LimitExceededException(Exception):
+    pass
+
+
 class BluefloodEndpoint():
 
-    def __init__(self, ingest_url='http://localhost:19000', retrieve_url='http://localhost:20000', tenant='tenant-id', agent=None):
+    def __init__(self, ingest_url='http://localhost:19000', retrieve_url='http://localhost:20000', tenant='tenant-id', agent=None, limit=None):
         self.agent = agent
         self.ingest_url = ingest_url
         self.retrieve_url = retrieve_url
         self.tenant = tenant
         self._json_buffer = []
         self.headers = {}
+        self.limit = limit
+        self._buffer_size = 0
 
     def ingest(self, metric_name, time, value, ttl):
         if not isinstance(time, list):
@@ -55,7 +61,12 @@ class BluefloodEndpoint():
             "metricValue": v,
             "metricName": metric_name
         } for t,v in zip(time, value)]
+        row_size = len(json.dumps(data))
+        # len('[]'') = 2, len(',' * total) = len(data) - 1
+        if self.limit and row_size + len(self._json_buffer) - 1 + self._buffer_size > self.limit:
+            raise LimitExceededException('JSON limit exceeded. Commit metrics before next ingest')
         self._json_buffer.extend(data)
+        self._buffer_size += row_size
 
     @inlineCallbacks
     def commit(self):
@@ -69,6 +80,7 @@ class BluefloodEndpoint():
         resp = yield d
         if resp.code == 200:
             self._json_buffer = []
+            self._buffer_size = 0
         returnValue(None)
 
 

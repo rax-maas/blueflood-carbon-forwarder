@@ -1,3 +1,7 @@
+from blueflood import LimitExceededException
+from twisted.internet.defer import inlineCallbacks, returnValue
+
+
 class IFlush:
 
     def flush(self, metrics):
@@ -25,10 +29,16 @@ class BluefloodFlush(IFlush):
         self.client = client
         self.ttl = ttl
 
+    @inlineCallbacks
     def flush(self, metrics):
         for name, time, value in metrics:
-            self.client.ingest(name, time, value, self.ttl)
-        self.client.commit()
+            try:
+                self.client.ingest(name, time, value, self.ttl)
+            except LimitExceededException:
+                yield self.client.commit()
+                self.client.ingest(name, time, value, self.ttl)
+        yield self.client.commit()
+        returnValue(None)
 
 
 class MetricCollection:        

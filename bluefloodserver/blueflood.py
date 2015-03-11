@@ -56,7 +56,7 @@ class BluefloodEndpoint():
 
 
         data = [{
-            "collectionTime": t,
+            "collectionTime": t*1000,
             "ttlInSeconds": ttl,
             "metricValue": v,
             "metricName": metric_name

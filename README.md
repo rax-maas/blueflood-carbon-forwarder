@@ -15,8 +15,8 @@ It does very primitive _'caching'_: aggregates all metrics and flushes them in r
 
 # Installation
 
-    git clone https://github.com/rampage644/graphite-http-wrapper
-    cd graphite-http-wrapper
+    git clone https://github.com/rackerlabs/blueflood-carbon-forwarder.git
+    cd blueflood-carbon-forwarder
     python setup.py install
 
 # Running

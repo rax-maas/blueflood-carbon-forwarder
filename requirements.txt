@@ -1,8 +1,8 @@
-graphite-blueflood==0.0.1
+graphite-blueflood==0.0.6
 mock==1.0.1
 py==1.4.26
 pytest==2.6.4
-Twisted==15.0.0
+Twisted==15.2.1
 zope.interface==4.1.2
 txKeystone==0.1.3
 

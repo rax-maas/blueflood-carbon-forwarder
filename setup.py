@@ -7,6 +7,7 @@ import os
 import sys
 
 import bluefloodserver
+import carbonforwarderlogging
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -34,8 +35,8 @@ class PyTest(TestCommand):
 
 setup(
     name='graphite-blueflood',
-    version="0.0.1",
-    url='https://github.com/rampage644/graphite-http-wrapper',
+    version="0.0.8",
+    url='https://github.com/rackerlabs/blueflood-carbon-forwarder',
     license='Apache Software License',
     author='Sergei Turukin',
     tests_require=['pytest', 'mock', 'twisted', 'pytest-twisted'],
@@ -44,7 +45,7 @@ setup(
     author_email='sergei.turukin@rackspace.com',
     description='Sending graphite metrics to blueflood',
     long_description=long_description,
-    packages=['bluefloodserver'],
+    packages=find_packages(exclude=[]) + ['bluefloodserver'] + ['carbonforwarderlogging'] + ["twisted.plugins"],
     include_package_data=True,
     platforms='any',
     test_suite='tests',

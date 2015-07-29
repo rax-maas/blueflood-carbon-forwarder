@@ -29,6 +29,12 @@ Configuration is done with command line arguments passed to twistd daemon when r
 
     twistd -n -l - blueflood-forward --help
 
+#Logging 
+
+Logging can be controlled using LogObserver provided along or you can use your own LogObserver
+
+    twistd --logger carbonforwarderlogging.forwarder_log_observer.get_log_observer blueflood-forward
+ 
 | Switch | Description | default |
 | ----- | ------- | --------- |
 | -e | Endpoint to listen on for pickle protocol metrics | tcp:2004 |

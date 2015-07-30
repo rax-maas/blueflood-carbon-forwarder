@@ -1,4 +1,6 @@
 recursive-include bluefloodserver *
 recursive-include twisted/plugins *
+recursive-include tests *
 include README.md
 include MANIFEST.in
+include tox.ini

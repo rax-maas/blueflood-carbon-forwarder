@@ -135,7 +135,7 @@ def test_noauth(blueflood_handler, twistd):
     metrics = json.loads(data)
     assert len(metrics) == 1
     assert metrics[0]['metricValue'] == value
-    assert int(metrics[0]['collectionTime']/1000) == timestamp
+    assert metrics[0]['collectionTime'] == timestamp
     assert metrics[0]['metricName'] == name
 
 def test_auth(blueflood_handler, auth_handler, twistd_auth):

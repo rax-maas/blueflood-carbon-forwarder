@@ -1,4 +1,4 @@
-graphite-blueflood==0.0.6
+graphite-blueflood==0.0.8
 mock==1.0.1
 py==1.4.26
 pytest==2.6.4

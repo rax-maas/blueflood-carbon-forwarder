@@ -35,14 +35,14 @@ class PyTest(TestCommand):
 
 setup(
     name='graphite-blueflood',
-    version="0.0.8",
+    version="0.1.0",
     url='https://github.com/rackerlabs/blueflood-carbon-forwarder',
     license='Apache Software License',
-    author='Sergei Turukin',
+    author='Rackspace Metrics',
     tests_require=['pytest', 'mock', 'twisted', 'pytest-twisted'],
     install_requires=['twisted', 'txKeystone'],
     cmdclass={'test': PyTest},
-    author_email='sergei.turukin@rackspace.com',
+    author_email='cloudMetrics-dev@lists.rackspace.com',
     description='Sending graphite metrics to blueflood',
     long_description=long_description,
     packages=find_packages(exclude=[]) + ['bluefloodserver'] + ['carbonforwarderlogging'] + ["twisted.plugins"],

@@ -1,6 +1,8 @@
+import logging
+
 from blueflood import LimitExceededException
 from twisted.internet.defer import inlineCallbacks, returnValue
-
+from twisted.python import log
 
 class IFlush:
 
@@ -25,18 +27,25 @@ class FileFlush(IFlush):
 
 class BluefloodFlush(IFlush):
 
-    def __init__(self, client, ttl=60*60*24):
+    def __init__(self, client, ttl=60*60*24, metric_prefix=None):
         self.client = client
         self.ttl = ttl
+        self.metric_prefix = metric_prefix
+        log.msg('Prepending all metrics with custom string {}'.format(metric_prefix), level=logging.DEBUG)
 
     @inlineCallbacks
     def flush(self, metrics):
         for name, time, value in metrics:
+            if self.metric_prefix != "":
+                metric_name = self.metric_prefix + '.' + name
+            else:
+                metric_name = name
             try:
-                self.client.ingest(name, time, value, self.ttl)
+                log.msg('Ingesting metric name {}, timestamp {}, ttl {}'.format(metric_name, time, self.ttl), level=logging.DEBUG)
+                self.client.ingest(metric_name, time, value, self.ttl)
             except LimitExceededException:
                 yield self.client.commit()
-                self.client.ingest(name, time, value, self.ttl)
+                self.client.ingest(metric_name, time, value, self.ttl)
         yield self.client.commit()
         returnValue(None)
 

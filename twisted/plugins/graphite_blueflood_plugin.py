@@ -21,15 +21,16 @@ class Options(usage.Options):
     AUTH_URL = 'https://identity.api.rackspacecloud.com/v2.0/tokens'
     DEFAULT_TTL = 60 * 60 * 24
     optParameters = [
-        ['endpoint', 'e', 'tcp:2004', 'Twisted formatted endpoint to listen to pickle protocol metrics'],
-        ['interval', 'i', 30, 'Metric send interval, sec'],
-        ['blueflood', 'b', 'http://localhost:19000', 'Blueflood server ingest URL (schema, host, port)'],
-        ['tenant', 't', '', 'Blueflood tenant ID'],
-        ['ttl', '', DEFAULT_TTL, 'TTL value for metrics, sec'],
-        ['user', 'u', '', 'Rackspace authentication username. Leave empty if no auth is required'],
-        ['key', 'k', '', 'Rackspace authentication password'],
-        ['auth_url', '', AUTH_URL, 'Auth URL'],
-        ['limit', '', 0, 'Blueflood json payload limit, bytes. 0 means no limit']
+        ['endpoint',      'e', 'tcp:2004', 'Twisted formatted endpoint to listen to pickle protocol metrics'],
+        ['interval',      'i', 30, 'Metric send interval, sec'],
+        ['blueflood',     'b', 'http://localhost:19000', 'Blueflood server ingest URL (schema, host, port)'],
+        ['tenant',        't', '', 'Blueflood tenant ID'],
+        ['metric_prefix', 'p', '', 'prefix metric name with this string before sending them to Blueflood'],
+        ['ttl',           '',  DEFAULT_TTL, 'TTL value for metrics, sec'],
+        ['user',          'u', '', 'Rackspace authentication username. Leave empty if no auth is required'],
+        ['key',           'k', '', 'Rackspace authentication password'],
+        ['auth_url',      '',  AUTH_URL, 'Auth URL'],
+        ['limit',         '',  0, 'Blueflood json payload limit, bytes. 0 means no limit']
     ]
 
 
@@ -64,6 +65,7 @@ class MetricService(Service):
         self.key = kwargs.get('key')
         self.auth_url = kwargs.get('auth_url')
         self.limit = kwargs.get('limit', 0)
+        self.metric_prefix = kwargs.get('metric_prefix', None)
         self.port = None
 
     def startService(self):
@@ -93,7 +95,7 @@ class MetricService(Service):
         self.timer.stop()
 
     def _setup_blueflood(self, factory, agent):
-        log.msg('Send metrics to {} as {} with {} sec interval'
+        log.msg('Send metrics to {} as tenant {} with {} sec interval'
             .format(self.blueflood_url, self.tenant, self.flush_interval))
         log.msg('Limit is {} bytes'.format(self.limit))
         client = BluefloodEndpoint(
@@ -101,7 +103,7 @@ class MetricService(Service):
             tenant=self.tenant,
             agent=agent,
             limit=int(self.limit))
-        flusher = BluefloodFlush(client=client, ttl=self.ttl)
+        flusher = BluefloodFlush(client=client, ttl=self.ttl, metric_prefix=self.metric_prefix)
         factory._metric_collection.flusher = flusher
 
 @implementer(IServiceMaker, IPlugin)
@@ -121,7 +123,8 @@ class MetricServiceMaker(object):
             user=options['user'],
             key=options['key'],
             auth_url=options['auth_url'],
-            limit=options['limit']
+            limit=options['limit'],
+            metric_prefix=options['metric_prefix']
         )
 
 

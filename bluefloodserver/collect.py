@@ -36,7 +36,7 @@ class BluefloodFlush(IFlush):
     @inlineCallbacks
     def flush(self, metrics):
         for name, time, value in metrics:
-            if self.metric_prefix != "":
+            if self.metric_prefix:
                 metric_name = self.metric_prefix + '.' + name
             else:
                 metric_name = name

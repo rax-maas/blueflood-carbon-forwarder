@@ -41,7 +41,6 @@ class BluefloodFlush(IFlush):
             else:
                 metric_name = name
             try:
-                log.msg('Ingesting metric name {}, timestamp {}, ttl {}'.format(metric_name, time, self.ttl), level=logging.DEBUG)
                 self.client.ingest(metric_name, time, value, self.ttl)
             except LimitExceededException:
                 yield self.client.commit()

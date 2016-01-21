@@ -1,3 +1,8 @@
+'''
+This is a simple test script that can be used to send pickle format 
+metric to a twistd server running blueflood-forward. 
+Modify the script as necessary for your testing need.
+'''
 import pickle
 import socket
 import struct

@@ -3,6 +3,7 @@
 import urllib2
 import urlparse
 import json
+import logging
 
 from StringIO import StringIO
 
@@ -11,7 +12,7 @@ from twisted.internet.defer import Deferred, inlineCallbacks, returnValue
 from twisted.internet.protocol import Protocol
 from twisted.web.client import Agent, FileBodyProducer, readBody
 from twisted.web.http_headers import Headers
-
+from twisted.python import log
 
 def _get_metrics_url(url, tenantId):
     return url + '/v2.0/'\
@@ -71,13 +72,15 @@ class BluefloodEndpoint():
     @inlineCallbacks
     def commit(self):
         body = FileBodyProducer(StringIO(json.dumps(self._json_buffer)))
+        url = _get_metrics_url(self.ingest_url, self.tenant)
         d = self.agent.request(
             'POST',
-            _get_metrics_url(self.ingest_url, self.tenant),
+            url,
             Headers(self.headers),
             body)
 
         resp = yield d
+        log.msg('POST {}, resp_code={}'.format(url, resp.code), level=logging.DEBUG)
         if resp.code == 200:
             self._json_buffer = []
             self._buffer_size = 0

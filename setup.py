@@ -35,7 +35,7 @@ class PyTest(TestCommand):
 
 setup(
     name='blueflood-carbon-forwarder',
-    version="0.3.0",
+    version="0.3.1",
     url='https://github.com/rackerlabs/blueflood-carbon-forwarder',
     license='Apache Software License',
     author='Rackspace Metrics',

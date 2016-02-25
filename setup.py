@@ -34,8 +34,8 @@ class PyTest(TestCommand):
         sys.exit(errcode)
 
 setup(
-    name='graphite-blueflood',
-    version="0.2.1",
+    name='blueflood-carbon-forwarder',
+    version="0.3.0",
     url='https://github.com/rackerlabs/blueflood-carbon-forwarder',
     license='Apache Software License',
     author='Rackspace Metrics',

@@ -1,7 +1,7 @@
 #!/bin/bash
 : ${TENANT_ID="123"}
 : ${LIMIT="1000000"}
-: ${ENDPOINT="-e tcp:2007"}
+: ${ENDPOINT="tcp:2007"}
 : ${BLUEFLOOD_URL="localhost:19000"}
 : ${DEFAULT_TTL="86400"}
 : ${METRICS_SEND_INTERVAL="30.0"}

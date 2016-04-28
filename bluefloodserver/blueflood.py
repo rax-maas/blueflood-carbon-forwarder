@@ -43,7 +43,8 @@ class BluefloodEndpoint():
         self.retrieve_url = retrieve_url
         self.tenant = tenant
         self._json_buffer = []
-        self.headers = {}
+        self.headers = {'Accept': ['application/json'],
+                        'Content-Type': ['application/json']}
         self.limit = limit
         self._buffer_size = 0
 

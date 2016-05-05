@@ -36,7 +36,9 @@ class MockServerHandler(resource.Resource):
 
     def render_POST(self, request):
         data = request.content.read()
-        self.data += [(time.time(), dict(request.received_headers), request.path, data)]
+        self.data += [(time.time(),
+                       dict([(k.lower(), v) for (k, [v]) in
+                             request.requestHeaders.getAllRawHeaders()]), request.path, data)]
         print self.data[-1]
         print ''
         if self.cv:

@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/rackerlabs/blueflood-carbon-forwarder.svg?branch=master)](https://travis-ci.org/rackerlabs/blueflood-carbon-forwarder)
 # Description
 
 Graphite _'backend'_. Twisted-based server accepts graphite source metrics and forward them to [blueflood][blueflood-git].

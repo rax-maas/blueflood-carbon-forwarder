@@ -72,3 +72,9 @@ Logging can be controlled using LogObserver provided along or you can use your o
 py.test
 ```
 
+# Security Considerations
+This tool makes use of Python's [`pickle`](https://docs.python.org/2/library/pickle.html) module to receive data from Graphite.
+The `pickle` module is not intended to be secure against maliciously-constructed data.
+In particular, specially-crafted payloads can be used to [execute arbitrary shell commands](https://blog.nelhage.com/2011/03/exploiting-pickle/) on the receiving side.
+For this reason, the forwarder uses a `SafeUnpickler` to restrict what classes can be deserialized, at the cost of speed.
+Normally, this shouldn't be a concern. However, if your application needs to deserialize objects at a faster rate, and the input is already known to be secure, the `get_unpickler` can made to return the default, insecure pickler.

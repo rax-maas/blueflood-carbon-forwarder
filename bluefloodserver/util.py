@@ -22,7 +22,7 @@ from twisted.scripts.twistd import runApp
 
 # This whole song & dance is due to pickle being insecure
 # yet performance critical for carbon. We leave the insecure
-# mode (which is faster) as an option (USE_INSECURE_UNPICKLER).
+# mode (which is faster), which you can get by passing False to get_unpickler.
 # The SafeUnpickler classes were largely derived from
 # http://nadiana.com/python-pickle-insecure
 if USING_CPICKLE:

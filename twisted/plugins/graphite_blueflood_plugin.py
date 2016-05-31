@@ -1,4 +1,5 @@
 import logging
+import ConfigParser
 
 from twisted.application.service import IServiceMaker, Service, MultiService
 from twisted.internet.endpoints import serverFromString
@@ -119,6 +120,16 @@ class MetricServiceMaker(object):
     options = Options
 
     def makeService(self, options):
+
+        if 'config' in options:
+            filename = options['config']
+            config = ConfigParser.RawConfigParser()
+            config.read(filename)
+            for key, value in config.items('blueflood_carbon_forwarder'):
+                if key in ['interval', 'ttl', 'limit']:
+                    value = int(value)
+                options[key] = value
+
         return MetricService(
             protocol_cls=MetricPickleReceiver,
             endpoint=options['endpoint'],

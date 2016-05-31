@@ -30,7 +30,13 @@ class Options(usage.Options):
         ['user',          'u', '', 'Rackspace authentication username. Leave empty if no auth is required'],
         ['key',           'k', '', 'Rackspace authentication password'],
         ['auth_url',      '',  AUTH_URL, 'Auth URL'],
-        ['limit',         '',  0, 'Blueflood json payload limit, bytes. 0 means no limit']
+        ['limit',         '',  0, 'Blueflood json payload limit, bytes. 0 means no limit'],
+        ['config',        'c', None,
+         'Path to a configuration file. The file must be in INI format, with '
+         '[bracketed] sections. All sections other than '
+         '[blueflood_carbon_forwarder] will be ignored. If this option is not '
+         'specified, no config file will be processed. Options specified in '
+         'the config file override values on the command line.']
     ]
 
 

@@ -69,6 +69,7 @@ Logging can be controlled using LogObserver provided along or you can use your o
 
 # Running unit tests
 ```
+pip install -r requirements.txt
 py.test
 ```
 

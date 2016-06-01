@@ -81,7 +81,7 @@ class BluefloodEndpoint():
 
         resp = yield d
         log.msg('POST {}, resp_code={}'.format(url, resp.code), level=logging.DEBUG)
-        if resp.code in [200,201,202,204]:
+        if resp.code in [200,201,202,204,207]:
             self._json_buffer = []
             self._buffer_size = 0
         returnValue(None)

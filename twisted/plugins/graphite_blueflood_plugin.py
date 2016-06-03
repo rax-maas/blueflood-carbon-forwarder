@@ -121,7 +121,7 @@ class MetricServiceMaker(object):
 
     def makeService(self, options):
 
-        if 'config' in options:
+        if 'config' in options and options['config'] is not None:
             filename = options['config']
             config = ConfigParser.RawConfigParser()
             config.read(filename)

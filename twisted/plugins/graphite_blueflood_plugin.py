@@ -23,7 +23,7 @@ class Options(usage.Options):
     DEFAULT_TTL = 60 * 60 * 24
     optParameters = [
         ['endpoint',      'e', 'tcp:2004', 'Twisted formatted endpoint to listen to pickle protocol metrics'],
-        ['interval',      'i', 30, 'Metric send interval, sec'],
+        ['interval',      'i', 30, 'Amount of time to wait before sending the next batch of metrics to blueflood, in seconds.'],
         ['blueflood',     'b', 'http://localhost:19000', 'Blueflood server ingest URL (schema, host, port)'],
         ['tenant',        't', '', 'Blueflood tenant ID'],
         ['metric_prefix', 'p', '', 'prefix metric name with this string before sending them to Blueflood'],

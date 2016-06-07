@@ -95,7 +95,7 @@ If a pickle message is not properly formatted (e.g. if `payload` gets truncated 
 
 ## Forwarding metrics via HTTP:
 
-The forwarder sends metrics to blueflood via an HTTP POST request to the `/v2.0//ingest` [sic] path.
+The forwarder sends metrics to blueflood via an HTTP POST request to the `/v2.0/${tenant}/ingest` path.
 For the most part, the response from that request is ignored. The response code _is_ checked, however.
 If the response code is `200`, `201`, `202`, `204`, or `207`, the forwarder assumes that the request succeeded, and that the metrics were successfully ingested.
 However, if the response code is anything else, then the behavior is a little more complex (see [Technical Details](#technical-details) below).

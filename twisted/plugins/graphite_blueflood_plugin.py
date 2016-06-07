@@ -1,4 +1,5 @@
 import logging
+import ConfigParser
 
 from twisted.application.service import IServiceMaker, Service, MultiService
 from twisted.internet.endpoints import serverFromString
@@ -22,15 +23,22 @@ class Options(usage.Options):
     DEFAULT_TTL = 60 * 60 * 24
     optParameters = [
         ['endpoint',      'e', 'tcp:2004', 'Twisted formatted endpoint to listen to pickle protocol metrics'],
-        ['interval',      'i', 30, 'Metric send interval, sec'],
+        ['interval',      'i', 30, 'Amount of time to wait before sending the next batch of metrics to blueflood, in seconds.'],
         ['blueflood',     'b', 'http://localhost:19000', 'Blueflood server ingest URL (schema, host, port)'],
         ['tenant',        't', '', 'Blueflood tenant ID'],
         ['metric_prefix', 'p', '', 'prefix metric name with this string before sending them to Blueflood'],
         ['ttl',           '',  DEFAULT_TTL, 'TTL value for metrics, sec'],
         ['user',          'u', '', 'Rackspace authentication username. Leave empty if no auth is required'],
-        ['key',           'k', '', 'Rackspace authentication password'],
+        ['key',           'k', '', 'Rackspace authentication password. It is recommended not to set this option from the command line, as that can compromise api keys. Instead, set the key in a config file and use the \'--config\' option below.'],
         ['auth_url',      '',  AUTH_URL, 'Auth URL'],
-        ['limit',         '',  0, 'Blueflood json payload limit, bytes. 0 means no limit']
+        ['limit',         '',  0, 'Blueflood json payload limit, bytes. 0 means no limit'],
+        ['config',        'c', None,
+         'Path to a configuration file. The file must be in INI format, with '
+         '[bracketed] sections. All sections other than '
+         '[blueflood_carbon_forwarder] will be ignored. If this option is not '
+         'specified, no config file will be processed. Any of the above options'
+         ' can be set in the config file. Options specified in the config file'
+         ' override values on the command line.']
     ]
 
 
@@ -113,6 +121,16 @@ class MetricServiceMaker(object):
     options = Options
 
     def makeService(self, options):
+
+        if 'config' in options and options['config'] is not None:
+            filename = options['config']
+            config = ConfigParser.RawConfigParser()
+            config.read(filename)
+            for key, value in config.items('blueflood_carbon_forwarder'):
+                if key in ['interval', 'ttl', 'limit']:
+                    value = int(value)
+                options[key] = value
+
         return MetricService(
             protocol_cls=MetricPickleReceiver,
             endpoint=options['endpoint'],

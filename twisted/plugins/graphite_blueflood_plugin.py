@@ -29,15 +29,16 @@ class Options(usage.Options):
         ['metric_prefix', 'p', '', 'prefix metric name with this string before sending them to Blueflood'],
         ['ttl',           '',  DEFAULT_TTL, 'TTL value for metrics, sec'],
         ['user',          'u', '', 'Rackspace authentication username. Leave empty if no auth is required'],
-        ['key',           'k', '', 'Rackspace authentication password'],
+        ['key',           'k', '', 'Rackspace authentication password. It is recommended not to set this option from the command line, as that can compromise api keys. Instead, set the key in a config file and use the \'--config\' option below.'],
         ['auth_url',      '',  AUTH_URL, 'Auth URL'],
         ['limit',         '',  0, 'Blueflood json payload limit, bytes. 0 means no limit'],
         ['config',        'c', None,
          'Path to a configuration file. The file must be in INI format, with '
          '[bracketed] sections. All sections other than '
          '[blueflood_carbon_forwarder] will be ignored. If this option is not '
-         'specified, no config file will be processed. Options specified in '
-         'the config file override values on the command line.']
+         'specified, no config file will be processed. Any of the above options'
+         ' can be set in the config file. Options specified in the config file'
+         ' override values on the command line.']
     ]
 
 

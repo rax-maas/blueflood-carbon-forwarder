@@ -38,6 +38,7 @@ It does very primitive _'caching'_: aggregates all metrics and flushes them in r
 | -k | Keystone key | |
 | --auth-url | Keystone token URL | |
 | --config | Set options from a config file | |
+| --overwrite_collection_timestamp | Replace metric collection timestamp with ingest timestamp | False |
 
 In case you need no authentication leave `-u`/`--user` command line argument empty (default value).
 It is recommended not to set the `key` option from the command line, as that can compromise api keys. Instead, set the key in a config file and set the `--config` option to the name of the file.'
@@ -59,7 +60,7 @@ Configuration is done with command line arguments passed to twistd daemon when r
 
 ```
 
-#Logging 
+# Logging 
 
 Logging can be controlled using LogObserver provided along or you can use your own LogObserver
 

@@ -32,6 +32,7 @@ class Options(usage.Options):
         ['key',           'k', '', 'Rackspace authentication password. It is recommended not to set this option from the command line, as that can compromise api keys. Instead, set the key in a config file and use the \'--config\' option below.'],
         ['auth_url',      '',  AUTH_URL, 'Auth URL'],
         ['limit',         '',  0, 'Blueflood json payload limit, bytes. 0 means no limit'],
+        ['protocol',      '',  'MetricPickleReceiver', 'Listening protocol class. MetricPickleReceiver for receiving metrics from graphite, or MetricLineReceiver to act as a graphite replacement.'],
         ['overwrite_collection_timestamp',  '',  False, 'Replace metric time with current blueflood carbon forwarder node time'],
         ['config',        'c', None,
          'Path to a configuration file. The file must be in INI format, with '
@@ -137,8 +138,15 @@ class MetricServiceMaker(object):
                     value = int(value)
                 options[key] = value
 
+        if options['protocol'] == "MetricPickleReceiver":
+            protocol_cls = MetricPickleReceiver
+        elif options['protocol'] == "MetricLineReceiver":
+            protocol_cls = MetricLineReceiver
+        else:
+            protocol_cls = MetricPickleReceiver
+
         return MetricService(
-            protocol_cls=MetricPickleReceiver,
+            protocol_cls=protocol_cls,
             endpoint=options['endpoint'],
             interval=float(options['interval']),
             blueflood_url=options['blueflood'],

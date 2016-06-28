@@ -32,6 +32,7 @@ class Options(usage.Options):
         ['key',           'k', '', 'Rackspace authentication password. It is recommended not to set this option from the command line, as that can compromise api keys. Instead, set the key in a config file and use the \'--config\' option below.'],
         ['auth_url',      '',  AUTH_URL, 'Auth URL'],
         ['limit',         '',  0, 'Blueflood json payload limit, bytes. 0 means no limit'],
+        ['overwrite_collection_timestamp',  '',  False, 'Replace metric time with current blueflood carbon forwarder node time'],
         ['config',        'c', None,
          'Path to a configuration file. The file must be in INI format, with '
          '[bracketed] sections. All sections other than '
@@ -74,6 +75,8 @@ class MetricService(Service):
         self.auth_url = kwargs.get('auth_url')
         self.limit = kwargs.get('limit', 0)
         self.metric_prefix = kwargs.get('metric_prefix', None)
+        self.overwrite_collection_timestamp = \
+            kwargs.get('overwrite_collection_timestamp', False)
         self.port = None
 
     def startService(self):
@@ -110,9 +113,12 @@ class MetricService(Service):
             ingest_url=self.blueflood_url,
             tenant=self.tenant,
             agent=agent,
-            limit=int(self.limit))
-        flusher = BluefloodFlush(client=client, ttl=self.ttl, metric_prefix=self.metric_prefix)
+            limit=int(self.limit),
+            overwrite_collection_timestamp=self.overwrite_collection_timestamp)
+        flusher = BluefloodFlush(client=client, ttl=self.ttl,
+                                 metric_prefix=self.metric_prefix)
         factory._metric_collection.flusher = flusher
+
 
 @implementer(IServiceMaker, IPlugin)
 class MetricServiceMaker(object):
@@ -142,7 +148,8 @@ class MetricServiceMaker(object):
             key=options['key'],
             auth_url=options['auth_url'],
             limit=options['limit'],
-            metric_prefix=options['metric_prefix']
+            metric_prefix=options['metric_prefix'],
+            overwrite_collection_timestamp=options['overwrite_collection_timestamp']
         )
 
 

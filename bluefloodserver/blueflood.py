@@ -4,6 +4,7 @@ import urllib2
 import urlparse
 import json
 import logging
+import time
 
 from StringIO import StringIO
 
@@ -14,9 +15,11 @@ from twisted.web.client import Agent, FileBodyProducer, readBody
 from twisted.web.http_headers import Headers
 from twisted.python import log
 
+
 def _get_metrics_url(url, tenantId):
     return url + '/v2.0/'\
         + tenantId + '/ingest'
+
 
 def _get_metrics_query_url(url, tenantId,
                            metricName, start, end, points):
@@ -24,11 +27,14 @@ def _get_metrics_query_url(url, tenantId,
         + '/views/' + metricName\
         + '?from=' + str(start) + '&to=' + str(end) + '&points=' + str(points)
 
+
 def _get_metrics_query_url_resolution(url, tenantId,
-                           metricName, start, end, resolution='FULL'):
+                                      metricName, start, end,
+                                      resolution='FULL'):
     return url + '/v2.0/' + tenantId\
         + '/views/' + metricName\
-        + '?from=' + str(start) + '&to=' + str(end) + '&resolution=' + resolution
+        + '?from=' + str(start) + '&to=' + str(end)\
+        + '&resolution=' + resolution
 
 
 class LimitExceededException(Exception):
@@ -37,7 +43,9 @@ class LimitExceededException(Exception):
 
 class BluefloodEndpoint():
 
-    def __init__(self, ingest_url='http://localhost:19000', retrieve_url='http://localhost:20000', tenant='tenant-id', agent=None, limit=None):
+    def __init__(self, ingest_url='http://localhost:19000',
+                 retrieve_url='http://localhost:20000', tenant='tenant-id',
+                 agent=None, limit=None, overwrite_collection_timestamp=False):
         self.agent = agent
         self.ingest_url = ingest_url
         self.retrieve_url = retrieve_url
@@ -46,22 +54,26 @@ class BluefloodEndpoint():
         self.headers = {}
         self.limit = limit
         self._buffer_size = 0
+        self.overwrite_collection_timestamp = overwrite_collection_timestamp
 
-    def ingest(self, metric_name, time, value, ttl):
-        if not isinstance(time, list):
-            time = [time]
+    def ingest(self, metric_name, metric_time, value, ttl):
+        if self.overwrite_collection_timestamp:
+            metric_time = [time.time()]
+        elif not isinstance(metric_time, list):
+            metric_time = [metric_time]
+
         if not isinstance(value, list):
             value = [value]
-        if len(time) != len(value):
-            raise Exception('time and value list lengths differ')
 
+        if len(metric_time) != len(value):
+            raise Exception('time and value list lengths differ')
 
         data = [{
             "collectionTime": t*1000,
             "ttlInSeconds": ttl,
             "metricValue": v,
             "metricName": metric_name
-        } for t,v in zip(time, value)]
+        } for t, v in zip(metric_time, value)]
         row_size = len(json.dumps(data))
         # len('[]'') = 2, len(',' * total) = len(data) - 1
         if self.limit and row_size + len(self._json_buffer) - 1 + self._buffer_size > self.limit:
@@ -81,11 +93,10 @@ class BluefloodEndpoint():
 
         resp = yield d
         log.msg('POST {}, resp_code={}'.format(url, resp.code), level=logging.DEBUG)
-        if resp.code in [200,201,202,204,207]:
+        if resp.code in [200, 201, 202, 204, 207]:
             self._json_buffer = []
             self._buffer_size = 0
         returnValue(None)
-
 
     @inlineCallbacks
     def retrieve_points(self, metric_name, start, to, points):

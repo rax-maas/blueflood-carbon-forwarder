@@ -2,7 +2,7 @@ graphite-blueflood==0.2.1
 mock==1.0.1
 py==1.10.0
 pytest==2.6.4
-Twisted==22.1.0
+Twisted==22.10.0
 zope.interface==4.1.2
 txKeystone==0.1.3
 nose==1.3.7
